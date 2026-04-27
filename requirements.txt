@@ -1,0 +1,8 @@
+fastapi[standard]>=0.115
+uvicorn[standard]>=0.30
+motor>=3.6.0
+dnspython>=2.6.0
+openai>=1.50
+python-dotenv>=1.0
+apscheduler>=3.10
+requests>=2.31
