@@ -92,6 +92,7 @@ export function triggerScan(): Promise<{ status: string; message: string }> {
 export type AppConfig = {
   keywords: string[];
   subreddits: string[];
+  ai_prompt: string | null;
 };
 
 export function getConfig(): Promise<AppConfig> {
