@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+import os
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from lead_engine.api.scheduler_manager import scheduler_manager
 from lead_engine.database import get_db
@@ -37,7 +38,19 @@ async def get_logs(limit: int = 20):
 
 # Add a cron endpoint for Vercel
 @router.get("/cron")
-async def vercel_cron_trigger():
+async def vercel_cron_trigger(
+    x_cron_secret: str | None = Header(default=None),
+    authorization: str | None = Header(default=None),
+):
     # This endpoint will be called by Vercel Cron
+    required_secret = os.getenv("CRON_SECRET", "").strip()
+    if required_secret:
+        bearer = ""
+        if authorization and authorization.lower().startswith("bearer "):
+            bearer = authorization[7:].strip()
+        provided_secret = (x_cron_secret or bearer or "").strip()
+        if provided_secret != required_secret:
+            raise HTTPException(status_code=401, detail="Unauthorized cron request")
+
     await scheduler_manager.run_scan_once() # We might need to expose this
     return {"status": "success"}
