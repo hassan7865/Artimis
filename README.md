@@ -412,10 +412,23 @@ SMTP_PASSWORD=your_app_password
 # Scheduler (V2)
 LEAD_ENGINE_SCHEDULER_ENABLED=true
 
+# Reddit lead scan behavior
+POSTS_PER_SUBREDDIT=50
+MIN_POST_AGE_MINUTES=60
+MAX_POST_AGE_MINUTES=180
+SCAN_INTERVAL_MINUTES=5
+REQUEST_DELAY_SEC=2.0
+
 # Costs (USD)
 LEAD_ENGINE_MAX_LLM_COST_PER_RUN=2.00
 LEAD_ENGINE_MAX_LLM_COST_PER_DAY=20.00
 ```
+
+Default Reddit scan behavior:
+
+- fetch the newest 50 posts from each configured subreddit
+- process only posts between 1 and 3 hours old
+- repeat the scan every 5 minutes when the scheduler is running
 
 Frontend environment (optional, `frontend/.env.local`):
 

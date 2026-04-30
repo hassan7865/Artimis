@@ -18,6 +18,8 @@ log = logging.getLogger("leadgen.engine")
 async def run_scan():
     """One full scan cycle: fetch → detect → score → store → notify."""
     start = time.time()
+    min_post_age_seconds = CONFIG["MIN_POST_AGE_MINUTES"] * 60
+    max_post_age_seconds = CONFIG["MAX_POST_AGE_MINUTES"] * 60
 
     subreddits = await get_active_subreddits()
     keywords   = await get_active_keywords()
@@ -25,12 +27,21 @@ async def run_scan():
     log.info("SCAN STARTED  %s", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     log.info("Monitoring:   %s", ", ".join(f"r/{s}" for s in subreddits))
     log.info("Keywords:     %d active", len(keywords))
+    log.info(
+        "Post age:     %d-%d minutes old",
+        CONFIG["MIN_POST_AGE_MINUTES"],
+        CONFIG["MAX_POST_AGE_MINUTES"],
+    )
     log.info("═" * 60)
 
     total_fetched  = 0
     total_new      = 0
     total_leads    = 0
     total_ai_calls = 0
+    skipped_processed = 0
+    skipped_too_new = 0
+    skipped_too_old = 0
+    processed_posts = 0
 
     for subreddit in subreddits:
         # Fetching posts is still synchronous for now (requests), but we wrap it
@@ -39,16 +50,48 @@ async def run_scan():
 
         for post in posts:
             total_fetched += 1
+            post_age_seconds = max(0, time.time() - post["created_utc"])
+            post_age_minutes = round(post_age_seconds / 60, 1)
 
             if await is_post_processed(post["post_id"]):
+                skipped_processed += 1
+                log.info(
+                    "  Skipping already processed post: %s age=%s min",
+                    post["post_id"],
+                    post_age_minutes,
+                )
                 continue
 
-            # Filter out posts older than 12 hours
-            if time.time() - post["created_utc"] > 43200:
+            if post_age_seconds < min_post_age_seconds:
+                skipped_too_new += 1
+                log.info(
+                    "  Skipping post %s from r/%s: too new (%s min old)",
+                    post["post_id"],
+                    subreddit,
+                    post_age_minutes,
+                )
+                continue
+
+            if post_age_seconds > max_post_age_seconds:
+                skipped_too_old += 1
+                log.info(
+                    "  Skipping post %s from r/%s: too old (%s min old)",
+                    post["post_id"],
+                    subreddit,
+                    post_age_minutes,
+                )
                 continue
 
             try:
                 total_new += 1
+                processed_posts += 1
+                log.info(
+                    "  Processing eligible post: %s r/%s age=%s min title=%r",
+                    post["post_id"],
+                    subreddit,
+                    post_age_minutes,
+                    post["title"][:120],
+                )
 
                 full_text = f"{post['title']} {post['body']}"
                 intents, matched_kws = detect_intents(full_text, keywords)
@@ -105,9 +148,28 @@ async def run_scan():
                 log.exception("Failed to process post %s", post.get("post_id"))
 
     duration = round(time.time() - start, 2)
-    await log_scan(total_new, total_leads, duration)
+    await log_scan(
+        total_new,
+        total_leads,
+        duration,
+        total_fetched,
+        processed_posts,
+        skipped_processed,
+        skipped_too_new,
+        skipped_too_old,
+    )
 
     log.info("─" * 60)
     log.info("SCAN COMPLETE in %ss", duration)
+    log.info(
+        "Fetched=%d Processed=%d Skipped(processed=%d too_new=%d too_old=%d) Leads=%d AI calls=%d",
+        total_fetched,
+        processed_posts,
+        skipped_processed,
+        skipped_too_new,
+        skipped_too_old,
+        total_leads,
+        total_ai_calls,
+    )
     log.info("─" * 60)
     return total_new, total_leads

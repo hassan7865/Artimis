@@ -7,7 +7,7 @@ import { Play, Square, Clock, History, RefreshCcw, Search, Zap, CheckCircle2 } f
 export function SchedulerControls() {
   const [status, setStatus] = useState<SchedulerStatus | null>(null);
   const [logs, setLogs] = useState<ScanLog[]>([]);
-  const [interval, setIntervalValue] = useState<number>(60);
+  const [interval, setIntervalValue] = useState<number>(5);
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
@@ -140,11 +140,19 @@ export function SchedulerControls() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
-                      <Search size={10} /> {log.new_posts} Checked
+                      <Search size={10} /> {log.fetched_posts} Fetched
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {log.processed_posts} Processed
                     </span>
                     <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600">
                       <CheckCircle2 size={10} /> {log.leads_found} Leads
                     </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400">
+                    <span>Seen: {log.skipped_processed}</span>
+                    <span>Too new: {log.skipped_too_new}</span>
+                    <span>Too old: {log.skipped_too_old}</span>
                   </div>
                 </div>
                 <div className="text-[10px] font-black text-slate-300">

@@ -41,30 +41,37 @@ from .database import get_ai_prompt
 async def analyse_with_gpt(post: dict, intents: list[str], matched_keywords: list[str]) -> dict:
     db_prompt = await get_ai_prompt()
     
-    system_prompt = db_prompt or """You are an expert Technical B2B Lead Analyst. 
-Your goal is to identify high-value clients looking for TECHNICAL implementation work.
+    system_prompt = db_prompt or """You are a B2B Lead Analyst specializing in identifying ACTIVE HIRING posts — people who are ready to pay someone RIGHT NOW to build something for them.
 
-QUALIFIED TECHNICAL WORK:
-- Artificial Intelligence: Building AI systems, LLM integrations, or RAG pipelines.
-- Software Development: Web apps (Next.js, React, Node), Mobile apps, or Backend systems.
-- Automation & Infra: Python automation, Cloud infrastructure (AWS/Azure), or DevOps.
-- Technical Architecture: Designing complex systems or handling scaling issues.
+WHAT WE'RE LOOKING FOR:
+A business owner, founder, or company that is actively posting to find a developer, agency, or freelancer to build or maintain a technical project. They should show clear intent, a defined problem, and willingness to pay.
 
-STRICT DISQUALIFICATION (Score 0):
-- Pure Marketing: SEO-only, Social Media management, or Lead Gen services.
-- Low-skill tasks: Data entry, Virtual Assistants, or manual research.
-- Content & Storytelling: Blog writing, sharing experiences, or asking generic advice.
-- Freelancer self-promotion: People looking for jobs instead of hiring.
+QUALIFIED SIGNALS (these indicate a real job/contract):
+- Explicit hiring language: "looking to hire", "need a dev", "anyone available", "taking on clients", "DM me your rates", "open to proposals"
+- Budget or compensation mentioned (even rough: "$500", "paid project", "reasonable budget", "equity + cash")
+- Defined deliverable: "build a dashboard", "integrate Stripe", "set up CI/CD", "create an AI chatbot"
+- Urgency or timeline: "ASAP", "need this done by X", "launching next month"
+- Startup or business context: they mention their product, company, or user base
 
-SCORING LOGIC:
-- 90-100: "Hot Lead" - Clear technical project, defined stack, and active intent to pay/hire.
-- 70-89: "Strong Lead" - Clear technical problem, looking for solutions or experts.
-- 1-69: "Weak Lead" - Vague technical interest or "how to" questions that might lead to a project.
-- 0: Not technical, irrelevant, or spam.
+STRICT DISQUALIFICATION (Score 0 — DO NOT flag these):
+- People looking for jobs themselves: "I'm a dev looking for work", "available for freelance", "portfolio link"
+- Advice-seeking only: "how do I find a developer?", "what's the best stack for X?" — no hiring intent
+- Pure sharing: "I built X", "my app does Y" — experience posts with no hiring
+- Vague complaints with no action: "I hate my current dev"
+- Marketing/content work only: copywriting gigs, social media management, blog posts
+
+SCORING:
+- 90-100: "Hot Lead" — explicit hire intent, budget mentioned, clear deliverable, technical work (dev, AI, automation)
+- 70-89: "Strong Lead" — clear hire intent, technical project, no explicit budget but context shows willingness to pay
+- 40-69: "Warm Lead" — indirect hire signal (e.g. frustrated with a technical problem, asking for referrals to devs/agencies)
+- 1-39: "Cold" — weak signal, mostly advice-seeking or sharing
+- 0: Not a lead. Disqualify entirely.
+
+KEY RULE: If the post does not show that the person wants to HIRE or PAY someone, the score must be below 40.
 
 Always respond with valid JSON only — no markdown, no explanation outside the JSON."""
 
-    user_prompt = f"""Review this Reddit post to determine if it is a qualified TECHNICAL business lead.
+    user_prompt = f"""Review this Reddit post and determine whether the author is actively looking to HIRE or PAY someone for technical work.
 
 [CONTEXT]
 SUBREDDIT: r/{post['subreddit']}
@@ -73,16 +80,16 @@ BODY: {post['body'][:1500]}
 DETECTED KEYWORDS: {', '.join(matched_keywords) if matched_keywords else 'none'}
 
 [TASK]
-1. Evaluate if the author is a potential client seeking technical expertise (AI, Web, Software, Automation).
-2. Assign a score based on technical depth and hiring intent.
-3. Provide a brief analysis of the specific technical opportunity.
-4. Draft a direct, value-driven outreach message that references their technical problem. Do NOT use generic greetings like "Hey there". Start directly with value.
+1. Determine if this is an active hiring/job post — someone who wants to pay a developer, agency, or freelancer.
+2. Assign a score based on hiring intent and clarity of the technical work required.
+3. Summarise the specific opportunity: what they need built and any budget/timeline signals.
+4. Draft a short, direct outreach DM that speaks to their exact need. Do NOT use generic greetings. Start with value.
 
 [RESPONSE FORMAT]
 Return a JSON object with exactly these keys:
 {{
   "score": <0-100>,
-  "analysis": "<2-3 sentences on the technical opportunity>",
+  "analysis": "<2-3 sentences on the hiring opportunity and what they need>",
   "outreach": "<3-4 sentence professional, non-salesy Reddit DM>"
 }}"""
 

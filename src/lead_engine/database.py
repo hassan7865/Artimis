@@ -100,12 +100,26 @@ async def mark_notified(post_id: str):
         {"$set": {"notified": True}}
     )
 
-async def log_scan(new_posts: int, leads_found: int, duration: float):
+async def log_scan(
+    new_posts: int,
+    leads_found: int,
+    duration: float,
+    fetched_posts: int,
+    processed_posts: int,
+    skipped_processed: int,
+    skipped_too_new: int,
+    skipped_too_old: int,
+):
     db = get_db()
     await db.scan_logs.insert_one({
         "new_posts": new_posts,
         "leads_found": leads_found,
         "duration_sec": duration,
+        "fetched_posts": fetched_posts,
+        "processed_posts": processed_posts,
+        "skipped_processed": skipped_processed,
+        "skipped_too_new": skipped_too_new,
+        "skipped_too_old": skipped_too_old,
         "run_at": datetime.now(timezone.utc)
     })
 

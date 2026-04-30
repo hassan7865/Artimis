@@ -15,10 +15,13 @@ CONFIG = {
     "MONGODB_DB_NAME": os.getenv("MONGODB_DB_NAME", "lead_engine"),
 
     # ── Scan settings ─────────────────────────────────────────────────────────
-    "POSTS_PER_SUBREDDIT": int(os.getenv("POSTS_PER_SUBREDDIT", "25")),
+    "POSTS_PER_SUBREDDIT": int(os.getenv("POSTS_PER_SUBREDDIT", "50")),
     "MIN_SCORE_TO_NOTIFY": int(os.getenv("MIN_SCORE_TO_NOTIFY", "70")),
     "MIN_PRESCORE_FOR_AI": int(os.getenv("MIN_PRESCORE_FOR_AI", "25")),
+    "MIN_POST_AGE_MINUTES": int(os.getenv("MIN_POST_AGE_MINUTES", "60")),
+    "MAX_POST_AGE_MINUTES": int(os.getenv("MAX_POST_AGE_MINUTES", "180")),
     "REQUEST_DELAY_SEC":   float(os.getenv("REQUEST_DELAY_SEC", "2.0")),
+    "SCAN_INTERVAL_MINUTES": int(os.getenv("SCAN_INTERVAL_MINUTES", "5")),
 
     # ── Slack (optional) ──────────────────────────────────────────────────────
     "SLACK_WEBHOOK_URL": os.getenv("SLACK_WEBHOOK_URL", ""),

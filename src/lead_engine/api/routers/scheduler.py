@@ -3,11 +3,12 @@ from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from lead_engine.api.scheduler_manager import scheduler_manager
 from lead_engine.database import get_db
+from lead_engine.config import CONFIG
 
 router = APIRouter(prefix="/scheduler", tags=["scheduler"])
 
 class SchedulerConfig(BaseModel):
-    interval_minutes: int
+    interval_minutes: int | None = None
 
 @router.get("/status")
 async def get_status():
@@ -15,10 +16,11 @@ async def get_status():
 
 @router.post("/start")
 async def start_scheduler(config: SchedulerConfig):
-    if config.interval_minutes < 1:
+    interval_minutes = config.interval_minutes or CONFIG["SCAN_INTERVAL_MINUTES"]
+    if interval_minutes < 1:
         raise HTTPException(status_code=400, detail="Interval must be at least 1 minute")
-    scheduler_manager.start(config.interval_minutes)
-    return {"status": "started", "config": config}
+    scheduler_manager.start(interval_minutes)
+    return {"status": "started", "config": {"interval_minutes": interval_minutes}}
 
 @router.post("/stop")
 async def stop_scheduler():

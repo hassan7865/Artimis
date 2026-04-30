@@ -145,6 +145,11 @@ export type ScanLog = {
   new_posts: number;
   leads_found: number;
   duration_sec: number;
+  fetched_posts: number;
+  processed_posts: number;
+  skipped_processed: number;
+  skipped_too_new: number;
+  skipped_too_old: number;
   run_at: string;
 };
 
@@ -152,8 +157,10 @@ export function getSchedulerStatus(): Promise<SchedulerStatus> {
   return apiGet<SchedulerStatus>("/api/scheduler/status");
 }
 
-export function startScheduler(interval: number): Promise<{ status: string }> {
-  return apiPost<{ status: string }>("/api/scheduler/start", { interval_minutes: interval });
+export function startScheduler(interval?: number): Promise<{ status: string }> {
+  return apiPost<{ status: string }>("/api/scheduler/start", {
+    interval_minutes: interval,
+  });
 }
 
 export function stopScheduler(): Promise<{ status: string }> {

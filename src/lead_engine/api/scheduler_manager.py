@@ -1,6 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from lead_engine.engine import run_scan
+from lead_engine.config import CONFIG
 import logging
 from datetime import datetime, timezone
 import asyncio
@@ -12,7 +13,7 @@ class SchedulerManager:
         self.scheduler = AsyncIOScheduler()
         self.job_id = "lead_scan_job"
         self._is_running = False
-        self._interval_minutes = 60
+        self._interval_minutes = CONFIG["SCAN_INTERVAL_MINUTES"]
         self._scan_lock = asyncio.Lock()
 
     async def _run_scan_job(self):
@@ -22,10 +23,13 @@ class SchedulerManager:
         async with self._scan_lock:
             await run_scan()
 
-    def start(self, interval_minutes: int = 60):
+    def start(self, interval_minutes: int | None = None):
         if self.scheduler.get_job(self.job_id):
             self.stop()
         
+        if interval_minutes is None:
+            interval_minutes = CONFIG["SCAN_INTERVAL_MINUTES"]
+
         self._interval_minutes = interval_minutes
         self.scheduler.add_job(
             self._run_scan_job,
